@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>motionreels video</title>
+<!-- Fonts: link the brand's real fonts here (Google Fonts or local files in this folder). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;800&display=block" rel="stylesheet">
+<style>
+/* mr:runtime-css start (do not edit this block) */
+html, body { margin: 0; height: 100%; background: #0d0d0d; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; overflow: hidden; transform-origin: 0 0; }
+#stage * { box-sizing: border-box; }
+#mr-bar { position: fixed; left: 0; right: 0; bottom: 0; height: 44px; display: flex; gap: 10px; align-items: center;
+  padding: 0 12px; background: #1b1b1b; color: #ddd; font: 13px/1 system-ui, sans-serif; z-index: 99; }
+#mr-bar button { background: #333; color: #eee; border: 0; border-radius: 6px; padding: 7px 12px; font: inherit; cursor: pointer; }
+#mr-bar input[type=range] { flex: 1; }
+#mr-bar select { background: #333; color: #eee; border: 0; border-radius: 6px; padding: 6px; font: inherit; }
+body.mr-render #mr-bar { display: none; }
+body.mr-render { background: transparent; }
+/* mr:runtime-css end */
+
+/* ---- the video's own styles below ---- */
+:root {
+  --bg: #F6F3EC;
+  --ink: #16140F;
+  --accent: #2F5BFF;
+  --font: 'Inter', system-ui, sans-serif;
+}
+#stage { background: var(--bg); font-family: var(--font); color: var(--ink); }
+.say { position: absolute; left: 96px; right: 96px; font-weight: 800; font-size: 104px; line-height: 1.05; letter-spacing: -0.02em; }
+#blob { position: absolute; left: 0; top: 0; width: 240px; height: 240px; background: var(--accent); border-radius: 120px; }
+.card { position: absolute; left: 140px; width: 800px; height: 520px; top: 700px; background: #fff; border-radius: 36px;
+  box-shadow: 0 30px 80px rgba(20,20,40,.12); padding: 56px; }
+.card .row { height: 44px; border-radius: 12px; background: #ECEAF3; margin-bottom: 28px; transform-origin: 0 50%; }
+#endcard { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+#endcard .name { font-weight: 800; font-size: 120px; letter-spacing: -0.03em; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <!-- Every word a viewer reads lives in an element with data-say (8 words or fewer,
+       16 characters or fewer in Japanese/Chinese/Korean). Words that belong to a
+       recreated app screen live inside data-ui. Translations: data-t-<lang>. -->
+  <div id="blob"></div>
+  <div class="card" id="card" data-ui>
+    <div class="row"></div><div class="row"></div><div class="row"></div>
+  </div>
+  <div class="say" id="line1" style="top:360px" data-say data-t-en="Your one line here" data-t-ja="ここに一行だけ"></div>
+  <div id="endcard"><div class="name" data-say data-t-en="yourapp.com" data-t-ja="yourapp.com"></div></div>
+</div>
+
+<div id="mr-bar">
+  <button id="mr-play">Pause</button>
+  <button id="mr-replay">Replay</button>
+  <input id="mr-scrub" type="range" min="0" max="1000" value="0">
+  <span id="mr-time">0.00s</span>
+  <select id="mr-lang"></select>
+</div>
+
+<script>
+/* mr:runtime start (do not edit this block) ------------------------------------------
+   The whole video is one function of time: MR.update(t => { ... }) sets every element
+   for the time t in seconds. Nothing may animate on its own (no CSS transitions,
+   keyframes or timers), because the renderer visits each frame by calling MR.seek(t). */
+(function () {
+  const q = new URLSearchParams(location.search);
+  const cfg = { width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en'], lang: 'en', endHold: 2 };
+  let updateFn = () => {};
+  const MR = (window.MR = {});
+  MR.config = (c) => { Object.assign(cfg, c); cfg.lang = q.get('lang') || c.lang || (c.langs || cfg.langs)[0]; applyText(); layout(); };
+  MR.update = (fn) => { updateFn = fn; };
+  MR.seek = (t) => { updateFn(Math.max(0, Math.min(cfg.duration, t))); };
+  MR.meta = () => {
+    const vertical = cfg.height > cfg.width;
+    // Areas that platform buttons and captions cover. Readable text stays inside.
+    const safe = vertical
+      ? { top: Math.round(cfg.height * 0.12), bottom: Math.round(cfg.height * 0.22), side: Math.round(cfg.width * 0.06) }
+      : { top: Math.round(cfg.height * 0.06), bottom: Math.round(cfg.height * 0.08), side: Math.round(cfg.width * 0.05) };
+    return { ...cfg, safe };
+  };
+  MR.render = q.has('render');
+  Object.defineProperty(MR, 'lang', { get: () => cfg.lang });
+
+  // Picks the string for the current language, English if missing.
+  window.L = (o) => (typeof o === 'string' ? o : o[cfg.lang] ?? o.en ?? Object.values(o)[0]);
+  function applyText() {
+    document.querySelectorAll('#stage *').forEach((el) => {
+      const v = el.getAttribute('data-t-' + cfg.lang) ?? el.getAttribute('data-t-en');
+      if (v !== null) el.textContent = v;
+    });
+    document.documentElement.lang = cfg.lang;
+  }
+
+  // ---- helpers for the video script ----
+  window.clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  window.lerp = (a, b, p) => a + (b - a) * p;
+  window.E = {
+    linear: (p) => p,
+    out: (p) => 1 - Math.pow(1 - p, 3),
+    in: (p) => p * p * p,
+    inOut: (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+    expo: (p) => (p >= 1 ? 1 : 1 - Math.pow(2, -10 * p)),
+    back: (p) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); },
+    spring: (p) => (p >= 1 ? 1 : 1 - Math.exp(-6 * p) * Math.cos(9 * p)),
+  };
+  // Progress 0..1 of the window a..b at time t, eased.
+  window.k = (t, a, b, ease = E.out) => ease(clamp((t - a) / (b - a)));
+  // The first n characters of str, typed from time a at cps characters per second.
+  window.typed = (str, t, a, cps = 18) => { const chars = [...str]; return chars.slice(0, Math.max(0, Math.floor((t - a) * cps))).join(''); };
+  window.$ = (s) => document.querySelector(s);
+  window.$$ = (s) => [...document.querySelectorAll(s)];
+  // set(el, {x, y, scale, sx, sy, rot, o, w, h, r, clip:[top,right,bottom,left] in %, bg, color, text})
+  window.set = (el, s) => {
+    if (typeof el === 'string') el = $(el);
+    if (!el) return;
+    const st = el.style;
+    if ('x' in s || 'y' in s || 'scale' in s || 'sx' in s || 'sy' in s || 'rot' in s) {
+      const sc = s.scale ?? 1;
+      st.transform = `translate(${s.x ?? 0}px, ${s.y ?? 0}px) rotate(${s.rot ?? 0}deg) scale(${(s.sx ?? 1) * sc}, ${(s.sy ?? 1) * sc})`;
+    }
+    if ('o' in s) st.opacity = s.o;
+    if ('w' in s) st.width = s.w + 'px';
+    if ('h' in s) st.height = s.h + 'px';
+    if ('r' in s) st.borderRadius = s.r + 'px';
+    if ('bg' in s) st.background = s.bg;
+    if ('color' in s) st.color = s.color;
+    if ('clip' in s) st.clipPath = `inset(${s.clip.map((v) => v + '%').join(' ')})`;
+    if ('text' in s && el.textContent !== s.text) el.textContent = s.text;
+  };
+
+  // ---- stage sizing, preview controls ----
+  const stage = () => document.getElementById('stage');
+  function layout() {
+    const s = stage();
+    if (!s) return;
+    s.style.width = cfg.width + 'px';
+    s.style.height = cfg.height + 'px';
+    if (MR.render) { s.style.transform = 'none'; return; }
+    const availH = innerHeight - 44, sc = Math.min(innerWidth / cfg.width, availH / cfg.height);
+    s.style.transform = `translate(${(innerWidth - cfg.width * sc) / 2}px, ${(availH - cfg.height * sc) / 2}px) scale(${sc})`;
+  }
+  addEventListener('resize', layout);
+
+  MR.ready = new Promise((res) => {
+    addEventListener('load', async () => {
+      if (MR.render) document.body.classList.add('mr-render');
+      applyText(); layout();
+      await document.fonts.ready;
+      await Promise.all([...document.images].map((i) => (i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))));
+      MR.seek(0);
+      res();
+      if (!MR.render) startPreview();
+    });
+  });
+
+  function startPreview() {
+    const play = $('#mr-play'), scrub = $('#mr-scrub'), time = $('#mr-time'), sel = $('#mr-lang');
+    cfg.langs.forEach((l) => { const o = document.createElement('option'); o.value = o.textContent = l; if (l === cfg.lang) o.selected = true; sel.appendChild(o); });
+    sel.onchange = () => { q.set('lang', sel.value); location.search = q.toString(); };
+    let playing = true, t0 = performance.now(), cur = 0;
+    const draw = (t) => { cur = t; MR.seek(t); scrub.value = Math.round((t / cfg.duration) * 1000); time.textContent = t.toFixed(2) + 's'; };
+    const tick = () => { if (playing) { let t = (performance.now() - t0) / 1000; if (t > cfg.duration + 0.6) { t0 = performance.now(); t = 0; } draw(Math.min(t, cfg.duration)); } requestAnimationFrame(tick); };
+    play.onclick = () => { playing = !playing; play.textContent = playing ? 'Pause' : 'Play'; t0 = performance.now() - cur * 1000; };
+    $('#mr-replay').onclick = () => { t0 = performance.now(); playing = true; play.textContent = 'Pause'; };
+    scrub.oninput = () => { playing = false; play.textContent = 'Play'; draw((scrub.value / 1000) * cfg.duration); };
+    addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); play.click(); } });
+    requestAnimationFrame(tick);
+  }
+})();
+/* mr:runtime end ------------------------------------------------------------------- */
+</script>
+
+<script>
+/* ---- the video ------------------------------------------------------------------
+   Example only: a shape that becomes a card, a line, an end card. Replace all of it. */
+MR.config({ width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en', 'ja'] });
+
+MR.update((t) => {
+  // 0.0 to 1.4: the shape is already moving on frame 0 and becomes the card.
+  const grow = k(t, 0, 1.2, E.inOut);
+  set('#blob', {
+    x: lerp(120, 140, grow), y: lerp(1400, 700, grow),
+    w: lerp(240, 800, grow), h: lerp(240, 520, grow), r: lerp(120, 36, grow),
+    o: 1 - k(t, 1.1, 1.3, E.linear),
+  });
+  // Each row fills in turn, so something is always happening while the line is read.
+  $$('#card .row').forEach((row, i) => set(row, { sx: k(t, 1.2 + i * 0.6, 1.9 + i * 0.6, E.inOut), bg: t > 1.9 + i * 0.6 ? 'var(--accent)' : '#ECEAF3' }));
+
+  // 0.3 to 3.6: the line rises in, then leaves by moving, never by fading alone.
+  const inP = k(t, 0.3, 0.9, E.spring), outP = k(t, 3.3, 3.9, E.in);
+  set('#line1', { y: lerp(80, 0, inP) - outP * 900, clip: [0, 0, lerp(100, 0, inP), 0] });
+  set('#card', { o: k(t, 1.1, 1.3, E.linear), y: lerp(0, -1400, outP), scale: lerp(1, 1.15, k(t, 1.3, 3.3, E.inOut)) });
+
+  // 3.6 to 6.0: end card pushes up from below.
+  const endP = k(t, 3.5, 4.2, E.expo);
+  set('#endcard', { y: lerp(1920, 0, endP), scale: lerp(1, 1.04, k(t, 4.6, 6, E.linear)) });
+});
+</script>
+</body>
+</html>
