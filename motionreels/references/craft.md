@@ -64,8 +64,8 @@ JUDGED, because a script cannot see them reliably: crossfades between scenes; fl
 
 ## Languages and scripts
 
-- A word in a non-Latin script is shown in its native script, with its romanization in small type directly under it when the viewer may not read that script: Japanese with romaji, Chinese with pinyin, Korean with revised romanization, Urdu and Arabic with a Roman transliteration, Hindi with a Roman transliteration. JUDGED.
-- Each script gets its own loaded font, set at a size where it reads as large as its Latin neighbours. Urdu is always Nastaliq from a loaded font file (for example Noto Nastaliq Urdu), never an Arabic Naskh fallback; Nastaliq draws small and tall, so set it about 1.2 times larger with extra line height. Right-to-left text gets `dir="rtl"`. JUDGED.
+- The on-screen language is the user's language unless they ask for others. Extra languages, romanization under foreign words, or a particular script style are the user's house rules: follow them when asked or saved in the profile, never by default. JUDGED.
+- Every script on screen gets a loaded font, never a system fallback, set at a size where it reads as large as its Latin neighbours; right-to-left text gets `dir="rtl"`. Some scripts need a specific style (Urdu is normally written in Nastaliq, which draws small and tall: set it about 1.2 times larger with extra line height). JUDGED.
 - Multilingual examples must be correct: check each translation and romanization against a dictionary, and avoid cognates when the point is how languages differ. JUDGED.
 
 ## Colour, type, assets

@@ -71,11 +71,13 @@ body.mr-render { background: transparent; }
    keyframes or timers), because the renderer visits each frame by calling MR.seek(t). */
 (function () {
   const q = new URLSearchParams(location.search);
-  const cfg = { width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en'], lang: 'en', endHold: 2, intensity: 'medium', name: 'video' };
+  const cfg = { width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en'], lang: 'en', endHold: 2, intensity: 'medium', name: 'video', sound: { music: 'none' }, cues: [] };
   let updateFn = () => {};
   const MR = (window.MR = {});
   MR.config = (c) => { Object.assign(cfg, c); cfg.lang = q.get('lang') || c.lang || (c.langs || cfg.langs)[0]; applyText(); layout(); };
   MR.update = (fn) => { updateFn = fn; };
+  // Sound effects at a time in seconds; render.mjs synthesises them (scripts/audio.mjs).
+  MR.cue = (t, name, opts = {}) => { cfg.cues.push({ t, name, ...opts }); };
   MR.seek = (t) => { updateFn(Math.max(0, Math.min(cfg.duration, t))); };
   MR.meta = () => {
     const vertical = cfg.height > cfg.width;
@@ -217,7 +219,8 @@ body.mr-render { background: transparent; }
 <script>
 /* ---- the video ------------------------------------------------------------------
    Example only: a shape that becomes a card, a line, an end card. Replace all of it. */
-MR.config({ width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en', 'ja'], intensity: 'medium', name: 'example' });
+MR.config({ width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en', 'ja'], intensity: 'medium', name: 'example', sound: { music: 'bright', bpm: 120 } });
+MR.cue(0, 'whoosh'); MR.cue(1.1, 'pop'); MR.cue(1.9, 'click'); MR.cue(2.5, 'click'); MR.cue(3.1, 'click'); MR.cue(3.5, 'swoosh'); MR.cue(4.2, 'thud');
 
 MR.update((t) => {
   // 0.0 to 1.4: the shape is already moving on frame 0 and becomes the card.

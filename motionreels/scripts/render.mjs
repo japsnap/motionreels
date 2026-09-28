@@ -7,6 +7,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import ffmpegPath from 'ffmpeg-static';
 import { parseArgs, resolvePage, openPage, seek, shot, fail } from './lib.mjs';
 import { check } from './check.mjs';
+import { buildAudio } from './audio.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const file = resolvePage(args._[0]);
@@ -44,10 +45,21 @@ async function renderOne(lang) {
   fs.mkdirSync(outDir, { recursive: true });
   const out = path.join(outDir, `${name}-${lang || meta.lang}-${meta.width}x${meta.height}.mp4`);
 
+  // Sound: the generated track (music bed + effects), with the user's own music file under it if given.
+  const wantSound = !args['no-audio'] && (args.audio || (meta.cues || []).length || ((meta.sound || {}).music || 'none') !== 'none');
+  let wav = null;
+  if (wantSound) {
+    wav = path.join(outDir, `${name}-sound.wav`);
+    const a = buildAudio(meta, wav, { musicOff: !!args.audio });
+    console.log(`sound: ${a.cues} effects, music ${a.music}${args.audio ? ` (${path.basename(args.audio)})` : ''}`);
+  }
   const ff = ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(meta.fps), '-c:v', 'png', '-i', '-'];
+  if (wav) ff.push('-i', wav);
   if (args.audio) ff.push('-i', path.resolve(args.audio));
   ff.push('-c:v', 'libx264', '-preset', 'medium', '-crf', String(args.crf || 18), '-pix_fmt', 'yuv420p', '-r', String(meta.fps), '-movflags', '+faststart');
-  if (args.audio) ff.push('-c:a', 'aac', '-b:a', '192k', '-shortest');
+  if (wav && args.audio) ff.push('-filter_complex', `[2:a]volume=0.5,afade=t=out:st=${Math.max(0, meta.duration - 1.2)}:d=1.2[m];[1:a][m]amix=inputs=2:normalize=0[a]`, '-map', '0:v', '-map', '[a]');
+  else if (wav) ff.push('-map', '0:v', '-map', '1:a');
+  if (wav) ff.push('-c:a', 'aac', '-b:a', '192k', '-shortest');
   ff.push(out);
   const enc = spawn(ffmpegPath, ff, { stdio: ['pipe', 'inherit', 'inherit'] });
   const done = new Promise((res, rej) => enc.on('close', (c) => (c === 0 ? res() : rej(new Error(`ffmpeg exited ${c}`)))));
@@ -86,8 +98,16 @@ async function renderOne(lang) {
   if (p.codec !== 'h264') problems.push(`video codec is ${p.codec}, expected h264`);
   if (p.width !== meta.width || p.height !== meta.height) problems.push(`size is ${p.width}x${p.height}, expected ${meta.width}x${meta.height}`);
   if (p.seconds === null || Math.abs(p.seconds - meta.duration) > 0.25) problems.push(`duration is ${p.seconds}s, expected ${meta.duration}s`);
+  if (wav) {
+    const vd = spawnSync(ffmpegPath, ['-hide_banner', '-i', out, '-map', '0:a', '-af', 'volumedetect', '-f', 'null', '-'], { encoding: 'utf8' }).stderr;
+    const mv = /mean_volume: (-?[\d.]+) dB/.exec(vd);
+    if (!mv) problems.push('no audio stream in the file');
+    else if (+mv[1] < -45) problems.push(`audio is nearly silent (mean ${mv[1]} dB)`);
+    else p.audio = `${mv[1]} dB mean`;
+    fs.rmSync(wav, { force: true });
+  }
   if (problems.length) fail(`Rendered file failed verification: ${problems.join('; ')}\n  ${out}`);
-  console.log(`  OK  ${out}\n      ${(size / 1e6).toFixed(1)} MB, ${p.seconds}s, ${p.width}x${p.height}, h264`);
+  console.log(`  OK  ${out}\n      ${(size / 1e6).toFixed(1)} MB, ${p.seconds}s, ${p.width}x${p.height}, h264${p.audio ? `, sound ${p.audio}` : ', no sound'}`);
   return out;
 }
 

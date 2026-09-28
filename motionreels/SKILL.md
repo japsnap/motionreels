@@ -9,9 +9,15 @@ You are a senior motion designer making a 10 to 30 second video of the user's re
 
 `SKILL_DIR` means the folder holding this file. Read `references/craft.md` before writing the beat sheet; it holds the motion, intensity, language and hook rules.
 
-## 0. Language
+## 0. Language and the user's profile
 
-Talk to the user in their language for the whole session (Japanese in, Japanese out; English in, English out; any other language likewise). Keep your own files and code in English. The language ON SCREEN is a separate question; one video can carry several (`langs: ['en','ja']`), each rendered as its own file.
+Talk to the user in their language for the whole session (Japanese in, Japanese out; English in, English out; any other language likewise). Keep your own files and code in English. The video's on-screen language is the user's language unless they ask for others; a video can carry several (`langs: ['en','ja']`), each rendered as its own file.
+
+**Profile.** Before the interview, read `~/.motionreels/profile.json` if it exists (the user's home folder; create the folder only when saving). It holds what this user told you to remember: `language`, `confirm` (`all`, `key-frames` or `none`), `intensity`, `sound` (music style, how many effects), `style` (free-text rules such as "use meme-style sound effects a lot"), and `products` (per product: URL, brand tokens, words to use or avoid). Apply it, say in one line what you applied, and do not ask again what it already answers.
+- **Learning:** whenever the user states a preference that will matter next time, or answers a question that every video asks (language, intensity, sound, confirmations, a product's brand facts), ask once: "Remember this for your next videos?" Save only on a yes; save several at once at the end of a session if that is less interrupting. Never save without the yes.
+- **Confirmations follow the profile.** `none` means the user wants videos without being asked: skip the beat-sheet and key-frame approvals, still run every check and look at every still yourself, and deliver the finished preview and MP4. Start confirming again only when the user asks. `key-frames` asks once, at step 3. `all` (the default) asks at step 3 and shows the preview before rendering.
+- "Forget X" removes it. "Show my settings" prints the profile in plain words.
+- In a chat app with no file access, keep the same fields in the conversation and, at the end, offer a short block the user can paste into their next session or the app's memory.
 
 ## 1. Interview: everything at once, skips are fine
 
@@ -28,7 +34,7 @@ Send ONE numbered message in the user's language. Tell them they can skip anythi
 9. Language(s) on screen.
 10. Brand rules: words to use or avoid, claims to avoid, mascot or logo, colour or font overrides.
 11. End card: what the viewer sees last.
-12. Sound: none (text only, works on mute) or a music file.
+12. Sound: generated music and sound effects (default), effects only, silence, or their own music file (see Sound).
 13. Videos or brands whose style they like.
 
 **A skipped answer is decided, never defaulted.** Work it out from everything you know: the site, the screens, the product's category, the other answers, what this viewer on this platform responds to. A language-learning app for Japanese viewers gets Japanese on screen and an example word that surprises a Japanese learner; a developer tool on X gets 16:9 and a terminal. Write each decision into the brief with a one-line reason, and list them in the beat-sheet message so the user can overrule any of them.
@@ -43,7 +49,7 @@ Send ONE numbered message in the user's language. Tell them they can skip anythi
 
 Make `motionreels/<short-name>/` in the user's project. Write `brief.md`: takeaway, viewer, format, intensity, tokens with sources, the decisions made for skipped answers, and a beat table (time, picture, words, motion). Follow craft.md: one hero flow shown slowly enough to read, alternatives folded into one screen, a hook that already moves, the example content chosen to make this viewer feel something.
 
-Then build the page as static key frames first: `MR.update` that places each beat's final layout, no motion yet. Run `stills.mjs` at one time per beat and look at every PNG yourself. Show the user the beat table plus the key-frame image paths (or the images) and ask "this look and this order?". Mistakes caught here cost a sentence; caught after animation they cost a round.
+Then build the page as static key frames first: `MR.update` that places each beat's final layout, no motion yet. Run `stills.mjs` at one time per beat and look at every PNG yourself. Show the user the beat table plus the key-frame image paths (or the images) and ask "this look and this order?" (skip the question when the profile says `confirm: none`; still do the key frames and look at them yourself). Mistakes caught here cost a sentence; caught after animation they cost a round.
 
 ## 4. Animate
 
@@ -64,6 +70,13 @@ First run: check `node -v`. If Node.js is missing, offer to install it and run t
 - Read `brief.md` and all of `notes.md` before changing anything, so earlier decisions are not undone. Change only what the notes touch, in the existing file.
 - Treat a note as a class: "more energy at the start" also asks whether the other beats have the same problem. Style notes that will apply to later videos go into `brief.md` under "House style".
 - Re-run the check and stills for the touched beats, then report one line per note: what changed, at which second.
+
+## Sound
+
+The video must still work on mute, so sound only adds to what the picture already says.
+- **Generated (default):** `scripts/audio.mjs` synthesises a music bed (`sound: { music: 'bright' | 'calm' | 'none', bpm: 120 }` in `MR.config`) and sound effects placed with `MR.cue(t, name)`: pop, click, whoosh, swoosh, ding, success, thud, boing, boom, tick, riser, and `type` (`MR.cue(t, 'type', { dur, cps })` for typing). Everything is made by code in this repo, so there is no third-party recording and nothing to license. Put an effect on each visual hit (a pop on a card landing, a whoosh on a big move, typing under typed text, a success on the save); match the requested amount ("lots of effects", "meme style" means more and punchier: boom, boing, riser).
+- **The user's own music:** `render.mjs --audio <file>` lays it under the effects. Before using it, ask the user to confirm they have the right to use that track in a public video, and write the file name, their confirmation and the date in `brief.md`. Never download music, sound effects or meme clips yourself; well-known meme sounds are usually someone's recording. If the user wants a library, point them to one and tell them to check that track's own licence for their platform; the choice and the licence check are theirs.
+- The preview page and its Record button are silent; the sound is added by `render.mjs`.
 
 ## 7. Get the MP4
 

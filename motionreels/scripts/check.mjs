@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { parseArgs, resolvePage, openPage, seek, shot } from './lib.mjs';
+import { CUE_NAMES, MUSIC } from './audio.mjs';
 
 const SAMPLE_STEP = 0.1;      // seconds between sampled frames
 const STILL_DIFF = 0.25;      // mean pixel change (0-255) below which two samples count as still
@@ -83,6 +84,13 @@ export async function check(target, { lang, quiet = false } = {}) {
   try {
     if (!MAX_HOLD[meta.intensity]) warns.push(`intensity "${meta.intensity}" unknown; use calm, medium or high (checked as medium)`);
     const holdLimit = MAX_HOLD[meta.intensity] || MAX_HOLD.medium;
+    // Sound: every cue name and the music style must exist (a misspelt name must fail here, not go silent).
+    const music = (meta.sound || {}).music || 'none';
+    if (music !== 'none' && !MUSIC[music]) fails.push(`music style "${music}" does not exist; use none, ${Object.keys(MUSIC).join(', ')}`);
+    for (const c of meta.cues || []) {
+      if (!CUE_NAMES.includes(c.name)) fails.push(`sound cue "${c.name}" at ${c.t}s does not exist; use one of ${CUE_NAMES.join(', ')}`);
+      if (!(c.t >= 0 && c.t < meta.duration)) fails.push(`sound cue "${c.name}" at ${c.t}s is outside the video (0 to ${meta.duration}s)`);
+    }
     if (meta.duration > 45) warns.push(`duration ${meta.duration}s: over 45 seconds usually loses the viewer; one idea per video`);
 
     // Text audit: every visible word belongs to data-say (message) or data-ui (a recreated screen).
