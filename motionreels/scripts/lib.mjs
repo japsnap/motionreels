@@ -57,6 +57,9 @@ export async function openPage(file, { lang, scale = 1 } = {}) {
   }
   await page.evaluate(() => window.MR.ready);
   const meta = await page.evaluate(() => window.MR.meta());
+  // Language codes become part of output file names, so only plain codes are allowed (en, ja, pt-BR).
+  const bad = [...(meta.langs || []), meta.lang].filter((l) => !/^[A-Za-z]{2,3}(-[A-Za-z]{2,4})?$/.test(String(l)));
+  if (bad.length) { await browser.close(); fail(`Language codes must look like en, ja or pt-BR; got: ${bad.join(', ')}`); }
   await page.setViewport({ width: meta.width, height: meta.height, deviceScaleFactor: scale });
   await page.evaluate(() => window.MR.ready);
   if (errors.length) {

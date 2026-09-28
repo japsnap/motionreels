@@ -16,7 +16,7 @@ Made with Claude Opus 5.5.
 ## How a session goes
 
 1. You say "make a promo video for my app" (or 「アプリの紹介動画を作って」).
-2. It sends all its questions in one message: URL, kind of video, the one takeaway, the viewer's pain, screenshots, viewer, platform and length, motion intensity (calm, medium, high), on-screen language, brand rules, end card, sound, styles you like. Skip any: it works out a skipped answer from your site, your screens and your other answers, tells you what it decided and why, and you can overrule it.
+2. It asks three short things: your URL, what people should see or feel, and screenshots. Skip any. Everything else (platform, length, motion intensity, language, sound, end card) it decides from your site and screens, and shows you what it chose so you can change it.
 3. It reads your site and screenshots, then shows you a beat sheet (time, picture, words, motion) and still images of each key frame, so the look is agreed before any animation.
 4. It animates, checks, looks at every beat, and gives you a preview page with Play, Replay, a scrubber, a language picker and a Record button.
 5. You give notes in plain words. It keeps every version, logs your notes, and edits the video you already have rather than starting over.
