@@ -23,15 +23,17 @@ function tone(sec, f, { type = 'sine', decay = sec, attack = 0.004, f2 = null, v
   }
   return out;
 }
-function noise(sec, { decay = sec, seed = 1, lp = 1, hp = 0, sweep = null } = {}) {
+function noise(sec, { decay = sec, seed = 1, lp = 1, hp = 0, sweep = null, poles = 1 } = {}) {
   const n = Math.ceil(sec * SR), out = new Float32Array(n), r = rng(seed);
-  let low = 0, prevIn = 0, high = 0;
+  let low = 0, low2 = 0, prevIn = 0, high = 0;
   for (let i = 0; i < n; i++) {
     const t = i / SR, p = t / sec;
     const a = sweep ? sweep(p) : lp;
     const x = r() * 2 - 1;
     low += a * (x - low);
-    high = hp ? hp * (high + low - prevIn) : low; prevIn = low;
+    low2 += a * (low - low2);
+    const lo = poles > 1 ? low2 : low;
+    high = hp ? hp * (high + lo - prevIn) : lo; prevIn = lo;
     const env = sweep ? Math.sin(Math.PI * p) : Math.exp(-t / (decay / 5));
     out[i] = high * env;
   }
@@ -47,8 +49,9 @@ const sum = (...parts) => { const n = Math.max(...parts.map(([b]) => b.length)),
 export const SFX = {
   pop: () => tone(0.12, 520, { f2: 1250, decay: 0.1 }),
   click: () => sum([noise(0.02, { lp: 0.9, hp: 0.6, decay: 0.012, seed: 3 }), 0.8], [tone(0.02, 2200, { decay: 0.012 }), 0.3]),
-  whoosh: () => noise(0.38, { seed: 7, sweep: (p) => 0.03 + 0.5 * Math.sin(Math.PI * p) }),
-  swoosh: () => noise(0.22, { seed: 11, sweep: (p) => 0.05 + 0.7 * p }),
+  // Air moving, not a hiss: two-pole filtered noise that opens only a little and swells smoothly.
+  whoosh: () => noise(0.45, { seed: 7, poles: 2, sweep: (p) => 0.015 + 0.13 * Math.sin(Math.PI * p) }).map((v) => v * 1.6),
+  swoosh: () => noise(0.3, { seed: 11, poles: 2, sweep: (p) => 0.02 + 0.16 * Math.sin(Math.PI * p) }).map((v) => v * 1.6),
   ding: () => sum([tone(1.0, 1318, { decay: 0.9 }), 0.6], [tone(1.0, 1976, { decay: 0.6 }), 0.3], [tone(1.0, 2637, { decay: 0.4 }), 0.12]),
   success: () => sum([tone(0.6, 880, { decay: 0.5, type: 'tri' }), 0.5], [tone(0.7, 1318, { decay: 0.6, type: 'tri' }), 0.5, 0.09]),
   thud: () => sum([tone(0.3, 110, { f2: 45, decay: 0.28 }), 1], [noise(0.08, { lp: 0.15, decay: 0.06, seed: 5 }), 0.5]),

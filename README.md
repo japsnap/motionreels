@@ -16,11 +16,10 @@ Made with Claude Opus 5.5.
 ## How a session goes
 
 1. You say "make a promo video for my app" (or 「アプリの紹介動画を作って」).
-2. It asks three short things: your URL, what people should see or feel, and screenshots. Skip any. Everything else (platform, length, motion intensity, language, sound, end card) it decides from your site and screens, and shows you what it chose so you can change it.
-3. It reads your site and screenshots, then shows you a beat sheet (time, picture, words, motion) and still images of each key frame, so the look is agreed before any animation.
-4. It animates, checks, looks at every beat, and gives you a preview page with Play, Replay, a scrubber, a language picker and a Record button.
-5. You give notes in plain words. It keeps every version, logs your notes, and edits the video you already have rather than starting over.
-6. It renders the MP4 (one per on-screen language) and verifies the file.
+2. In its first reply it asks three short things (your URL, what people should see or feel, screenshots) plus an optional list you can add to (length, format, sound, intensity, colours...). Skip any; it decides the rest from your site and screens.
+3. It reads your site and screenshots and plans the video, checking a still of every scene itself.
+4. It animates, runs the checker, and hands you the finished MP4, with a list of what it decided.
+5. Want changes? Say them in plain words. It keeps every version, logs your notes, and edits the video you already have rather than starting over.
 
 ## Use it
 
@@ -42,19 +41,19 @@ Made with Claude Opus 5.5.
 
 **Codex**: the same, with `~/.codex/skills/` in place of `~/.claude/skills/`.
 
-**claude.ai** (no install, screen quality, no sound)
+**claude.ai** (no install; tested with Claude Opus 5.5, which made the MP4 with sound itself when asked)
 
 1. Download this repo as a ZIP (green Code button, Download ZIP), unzip it, and zip the inner `motionreels` folder on its own.
 2. In claude.ai open Settings, Capabilities, Skills, and upload that ZIP.
-3. In a new chat, ask for a promo video of your app and answer the questions. You get an `index.html` file.
+3. In a new chat, ask for a promo video of your app and answer the questions. Ask for the MP4; if it can't make one, you get an `index.html` file.
 4. Download it, open it in desktop Chrome or Edge, press **Record video**, choose "this tab" and allow it. The video plays once and an MP4 downloads (WebM where the browser cannot record MP4). Use a full-screen window: the quality is the size it shows on your screen.
 
-**ChatGPT** (no install, screen quality, no sound; not yet tested by us)
+**ChatGPT** (no install; tested on the Plus plan: usable, weaker than Opus 5.5, and it also made an MP4 when asked)
 
 1. Download this repo as a ZIP and unzip it.
 2. In ChatGPT start a new chat and attach three files: `motionreels/SKILL.md`, `motionreels/references/craft.md`, `motionreels/template/index.html`.
 3. Send: "Follow SKILL.md to make a promo video of my app. Use craft.md as the rules and template/index.html as the starting file. Give me the finished index.html as a download."
-4. Answer its questions, download the `index.html` it gives you, and record it as in step 4 above.
+4. Answer its questions and ask for the MP4. If it gives you an `index.html` instead, download it and record it as in step 4 above.
 
 For the full-quality file with sound, run the same skill in Claude Code.
 

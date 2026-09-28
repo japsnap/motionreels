@@ -183,7 +183,7 @@ body.mr-render { background: transparent; }
       let stream;
       try {
         stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: cfg.fps, displaySurface: 'browser' }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include' });
-      } catch (e) { msg.textContent = 'Recording was not allowed: ' + e.message; return; }
+      } catch (e) { msg.textContent = /permissions policy|display-capture/i.test(e.message) ? 'Recording is blocked inside a chat preview. Download this file, open it from your computer in Chrome, and press Record again.' : 'Recording was not allowed: ' + e.message; return; }
       const [track] = stream.getVideoTracks();
       document.body.classList.add('mr-recording'); layout();
       playing = false; draw(0);
