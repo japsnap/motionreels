@@ -38,7 +38,7 @@ async function renderOne(lang) {
     const res = await check(file, { lang });
     if (!res.ok) fail('Check failed, nothing rendered. Fix the problems above (or read references/craft.md).');
   }
-  const { browser, page, meta } = await openPage(file, { lang });
+  let { browser, page, meta } = await openPage(file, { lang });
   const frames = Math.round(meta.duration * meta.fps);
   const outDir = path.join(dir, 'out');
   fs.mkdirSync(outDir, { recursive: true });
@@ -53,9 +53,23 @@ async function renderOne(lang) {
   const done = new Promise((res, rej) => enc.on('close', (c) => (c === 0 ? res() : rej(new Error(`ffmpeg exited ${c}`)))));
 
   console.log(`rendering ${frames} frames (${meta.duration}s at ${meta.fps}fps, ${meta.width}x${meta.height}, ${lang || meta.lang})`);
+  let restarts = 0;
   for (let i = 0; i < frames; i++) {
-    await seek(page, i / meta.fps);
-    const buf = await shot(page, meta);
+    let buf;
+    try {
+      // Test seam: MR_TEST_CRASH=<frame> kills Chrome once at that frame to exercise the recovery below.
+      if (process.env.MR_TEST_CRASH && +process.env.MR_TEST_CRASH === i && restarts === 0) await browser.close();
+      await seek(page, i / meta.fps);
+      buf = await shot(page, meta);
+    } catch (e) {
+      // Chrome sometimes dies on long renders; reopen it and carry on from this frame.
+      if (++restarts > 3) throw e;
+      console.log(`\n  Chrome stopped at frame ${i} (${String(e.message).split('\n')[0]}); reopening, attempt ${restarts} of 3`);
+      await browser.close().catch(() => {});
+      ({ browser, page } = await openPage(file, { lang }));
+      i--;
+      continue;
+    }
     if (!enc.stdin.write(buf)) await new Promise((r) => enc.stdin.once('drain', r));
     if (i % meta.fps === 0) process.stdout.write(`\r  ${Math.round((i / frames) * 100)}%`);
   }

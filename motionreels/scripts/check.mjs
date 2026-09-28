@@ -12,9 +12,11 @@ import { parseArgs, resolvePage, openPage, seek, shot } from './lib.mjs';
 
 const SAMPLE_STEP = 0.1;      // seconds between sampled frames
 const STILL_DIFF = 0.25;      // mean pixel change (0-255) below which two samples count as still
-const MAX_HOLD = 1.2;         // longest allowed still stretch mid-video, seconds
+const MAX_HOLD = { calm: 1.6, medium: 1.2, high: 0.8 }; // longest still stretch mid-video, by intensity
 const START_WINDOW = 0.3;     // something must visibly move within this many seconds of frame 0
 const MIN_TEXT_RATIO = 0.04;  // smallest readable text as a share of the frame width
+// Seconds a line must be on screen to be read: 0.5 s plus 0.22 s a word (Latin) or 0.12 s a character (CJK).
+const readNeed = (s) => { const cjk = (s.match(/[぀-ヿ㐀-鿿가-힯]/g) || []).length; return cjk ? 0.5 + cjk * 0.12 : 0.5 + s.split(/\s+/).filter(Boolean).length * 0.22; };
 
 const BANS = [
   { re: /blur\(/i, skip: /backdrop/i, why: 'blur (blur-ins and soft focus read as template slop)' },
@@ -79,6 +81,8 @@ export async function check(target, { lang, quiet = false } = {}) {
 
   const { browser, page, meta } = await openPage(file, { lang, scale: 0.25 });
   try {
+    if (!MAX_HOLD[meta.intensity]) warns.push(`intensity "${meta.intensity}" unknown; use calm, medium or high (checked as medium)`);
+    const holdLimit = MAX_HOLD[meta.intensity] || MAX_HOLD.medium;
     if (meta.duration > 45) warns.push(`duration ${meta.duration}s: over 45 seconds usually loses the viewer; one idea per video`);
 
     // Text audit: every visible word belongs to data-say (message) or data-ui (a recreated screen).
@@ -111,6 +115,7 @@ export async function check(target, { lang, quiet = false } = {}) {
     let prev = null, first = null, stillRun = 0, stillStart = 0;
     const holds = [];
     const safeHits = new Map(); // text -> consecutive samples outside the safe area
+    const seenFor = new Map();  // text -> samples on screen
     let startMoved = false;
     for (let i = 0; i < steps; i++) {
       const t = Math.min(meta.duration, i * SAMPLE_STEP);
@@ -129,7 +134,7 @@ export async function check(target, { lang, quiet = false } = {}) {
       prev = img;
 
       const out = await page.evaluate((safe, W, H) => {
-        const bad = [];
+        const bad = [], shown = [];
         document.querySelectorAll('[data-say]').forEach((el) => {
           const s = el.textContent.trim();
           if (!s) return;
@@ -142,11 +147,15 @@ export async function check(target, { lang, quiet = false } = {}) {
           const ink = range.getBoundingClientRect();
           const box = ink.width ? ink : r;
           if (box.bottom < 0 || box.top > H || box.right < 0 || box.left > W) return;
+          const cs = getComputedStyle(el).clipPath;
+          const m = /inset\(([\d.]+)%\s+[\d.]+%\s+([\d.]+)%/.exec(cs || '');
+          if (!m || +m[1] + +m[2] < 60) shown.push(s);
           if (box.top < safe.top || box.bottom > H - safe.bottom || box.left < safe.side || box.right > W - safe.side) bad.push(s.slice(0, 40));
         });
-        return bad;
+        return { bad, shown };
       }, meta.safe, meta.width, meta.height);
-      const seen = new Set(out);
+      for (const s of new Set(out.shown)) seenFor.set(s, (seenFor.get(s) || 0) + 1);
+      const seen = new Set(out.bad);
       for (const s of seen) safeHits.set(s, (safeHits.get(s) || 0) + 1);
       for (const s of [...safeHits.keys()]) if (!seen.has(s)) {
         if (safeHits.get(s) >= 5) fails.push(`"${s}" sits outside the safe area (platform buttons cover it) for ${(safeHits.get(s) * SAMPLE_STEP).toFixed(1)}s`);
@@ -155,10 +164,11 @@ export async function check(target, { lang, quiet = false } = {}) {
     }
     for (const [s, n] of safeHits) if (n >= 5) fails.push(`"${s}" sits outside the safe area (platform buttons cover it) at the end`);
     if (stillRun) holds.push([stillStart, stillRun * SAMPLE_STEP, true]);
+    for (const [s, n] of seenFor) { const on = n * SAMPLE_STEP, need = readNeed(s); if (on + 1e-6 < need) fails.push(`"${s.slice(0, 40)}" is readable for ${on.toFixed(1)}s; it needs ${need.toFixed(1)}s`); }
     if (!startMoved) fails.push(`nothing moves in the first ${START_WINDOW}s; the first frame must already be in motion (a still opening is swiped away)`);
     for (const [at, len, atEnd] of holds) {
-      const limit = atEnd ? meta.endHold : MAX_HOLD;
-      if (len > limit + 1e-6) fails.push(`${atEnd ? 'end card holds' : 'the picture holds still'} for ${len.toFixed(1)}s from ${at.toFixed(1)}s (limit ${limit}s); keep something moving`);
+      const limit = atEnd ? meta.endHold : holdLimit;
+      if (len > limit + 1e-6) fails.push(`${atEnd ? 'end card holds' : 'the picture holds still'} for ${len.toFixed(1)}s from ${at.toFixed(1)}s (limit ${limit}s); keep something moving (intensity ${meta.intensity})`);
     }
   } finally {
     await browser.close();

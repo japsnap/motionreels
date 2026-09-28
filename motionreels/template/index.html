@@ -18,7 +18,9 @@ html, body { margin: 0; height: 100%; background: #0d0d0d; overflow: hidden; }
 #mr-bar button { background: #333; color: #eee; border: 0; border-radius: 6px; padding: 7px 12px; font: inherit; cursor: pointer; }
 #mr-bar input[type=range] { flex: 1; }
 #mr-bar select { background: #333; color: #eee; border: 0; border-radius: 6px; padding: 6px; font: inherit; }
-body.mr-render #mr-bar { display: none; }
+body.mr-render #mr-bar, body.mr-recording #mr-bar { display: none; }
+body.mr-recording { cursor: none; }
+#mr-msg { color: #9c9; }
 body.mr-render { background: transparent; }
 /* mr:runtime-css end */
 
@@ -58,6 +60,8 @@ body.mr-render { background: transparent; }
   <input id="mr-scrub" type="range" min="0" max="1000" value="0">
   <span id="mr-time">0.00s</span>
   <select id="mr-lang"></select>
+  <button id="mr-rec" title="Records this tab to a video file. For full quality, use render.mjs.">Record video</button>
+  <span id="mr-msg"></span>
 </div>
 
 <script>
@@ -67,7 +71,7 @@ body.mr-render { background: transparent; }
    keyframes or timers), because the renderer visits each frame by calling MR.seek(t). */
 (function () {
   const q = new URLSearchParams(location.search);
-  const cfg = { width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en'], lang: 'en', endHold: 2 };
+  const cfg = { width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en'], lang: 'en', endHold: 2, intensity: 'medium', name: 'video' };
   let updateFn = () => {};
   const MR = (window.MR = {});
   MR.config = (c) => { Object.assign(cfg, c); cfg.lang = q.get('lang') || c.lang || (c.langs || cfg.langs)[0]; applyText(); layout(); };
@@ -139,7 +143,7 @@ body.mr-render { background: transparent; }
     s.style.width = cfg.width + 'px';
     s.style.height = cfg.height + 'px';
     if (MR.render) { s.style.transform = 'none'; return; }
-    const availH = innerHeight - 44, sc = Math.min(innerWidth / cfg.width, availH / cfg.height);
+    const availH = innerHeight - (document.body.classList.contains('mr-recording') ? 0 : 44), sc = Math.min(innerWidth / cfg.width, availH / cfg.height);
     s.style.transform = `translate(${(innerWidth - cfg.width * sc) / 2}px, ${(availH - cfg.height * sc) / 2}px) scale(${sc})`;
   }
   addEventListener('resize', layout);
@@ -160,14 +164,51 @@ body.mr-render { background: transparent; }
     const play = $('#mr-play'), scrub = $('#mr-scrub'), time = $('#mr-time'), sel = $('#mr-lang');
     cfg.langs.forEach((l) => { const o = document.createElement('option'); o.value = o.textContent = l; if (l === cfg.lang) o.selected = true; sel.appendChild(o); });
     sel.onchange = () => { q.set('lang', sel.value); location.search = q.toString(); };
-    let playing = true, t0 = performance.now(), cur = 0;
+    let playing = true, recording = false, t0 = performance.now(), cur = 0;
     const draw = (t) => { cur = t; MR.seek(t); scrub.value = Math.round((t / cfg.duration) * 1000); time.textContent = t.toFixed(2) + 's'; };
-    const tick = () => { if (playing) { let t = (performance.now() - t0) / 1000; if (t > cfg.duration + 0.6) { t0 = performance.now(); t = 0; } draw(Math.min(t, cfg.duration)); } requestAnimationFrame(tick); };
+    const tick = () => { if (playing) { let t = (performance.now() - t0) / 1000; if (t > cfg.duration + 0.6 && !recording) { t0 = performance.now(); t = 0; } draw(Math.min(t, cfg.duration)); } requestAnimationFrame(tick); };
     play.onclick = () => { playing = !playing; play.textContent = playing ? 'Pause' : 'Play'; t0 = performance.now() - cur * 1000; };
     $('#mr-replay').onclick = () => { t0 = performance.now(); playing = true; play.textContent = 'Pause'; };
     scrub.oninput = () => { playing = false; play.textContent = 'Play'; draw((scrub.value / 1000) * cfg.duration); };
     addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); play.click(); } });
     requestAnimationFrame(tick);
+
+    // Record: captures this tab's video area in real time and downloads the file. Screen
+    // quality (the size the video shows on your screen); render.mjs gives full quality.
+    const msg = $('#mr-msg'), rec = $('#mr-rec');
+    rec.onclick = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) { msg.textContent = 'Recording needs desktop Chrome or Edge, with this file opened directly (not inside a chat preview).'; return; }
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: cfg.fps, displaySurface: 'browser' }, audio: false, preferCurrentTab: true, selfBrowserSurface: 'include' });
+      } catch (e) { msg.textContent = 'Recording was not allowed: ' + e.message; return; }
+      const [track] = stream.getVideoTracks();
+      document.body.classList.add('mr-recording'); layout();
+      playing = false; draw(0);
+      let method = 'whole tab';
+      try {
+        if (window.CropTarget && track.cropTo) { await track.cropTo(await CropTarget.fromElement(stage())); method = 'crop'; }
+      } catch (e) { method = 'whole tab (crop failed: ' + e.message + ')'; }
+      MR.recordInfo = { method, settings: track.getSettings() };
+      const type = ['video/mp4;codecs=avc1.640028', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find((t) => MediaRecorder.isTypeSupported(t));
+      const mr = new MediaRecorder(stream, { mimeType: type, videoBitsPerSecond: 16e6 });
+      const chunks = [];
+      mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+      const stopped = new Promise((r) => { mr.onstop = r; });
+      await new Promise((r) => setTimeout(r, 400));
+      mr.start(100);
+      t0 = performance.now(); playing = true; recording = true;
+      await new Promise((r) => setTimeout(r, cfg.duration * 1000 + 250));
+      mr.stop(); await stopped; track.stop(); recording = false;
+      document.body.classList.remove('mr-recording'); layout();
+      const blob = new Blob(chunks, { type: type.split(';')[0] });
+      MR.lastRecording = blob; MR.recordInfo.chunks = chunks.length;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${cfg.name}-${cfg.lang}.${type.includes('mp4') ? 'mp4' : 'webm'}`;
+      a.click();
+      msg.textContent = `Saved ${a.download} (${(blob.size / 1e6).toFixed(1)} MB).`;
+    };
   }
 })();
 /* mr:runtime end ------------------------------------------------------------------- */
@@ -176,7 +217,7 @@ body.mr-render { background: transparent; }
 <script>
 /* ---- the video ------------------------------------------------------------------
    Example only: a shape that becomes a card, a line, an end card. Replace all of it. */
-MR.config({ width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en', 'ja'] });
+MR.config({ width: 1080, height: 1920, fps: 30, duration: 6, langs: ['en', 'ja'], intensity: 'medium', name: 'example' });
 
 MR.update((t) => {
   // 0.0 to 1.4: the shape is already moving on frame 0 and becomes the card.
