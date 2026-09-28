@@ -155,6 +155,11 @@ export async function check(target, { lang, quiet = false } = {}) {
           const ink = range.getBoundingClientRect();
           const box = ink.width ? ink : r;
           if (box.bottom < 0 || box.top > H || box.right < 0 || box.left > W) return;
+          // Text hidden under another layer is not seen by the viewer: skip it.
+          const px = Math.min(W - 1, Math.max(0, (box.left + box.right) / 2)), py = Math.min(H - 1, Math.max(0, (box.top + box.bottom) / 2));
+          const seen = (n) => { let op = 1; for (let e = n; e && e.id !== 'stage'; e = e.parentElement) { const cs = getComputedStyle(e); if (cs.visibility === 'hidden' || cs.display === 'none') return false; op *= parseFloat(cs.opacity); } return op > 0.05; };
+          const top = document.elementsFromPoint(px, py).find(seen);
+          if (top && top !== el && !el.contains(top) && !top.contains(el)) return;
           const cs = getComputedStyle(el).clipPath;
           const m = /inset\(([\d.]+)%\s+[\d.]+%\s+([\d.]+)%/.exec(cs || '');
           if (!m || +m[1] + +m[2] < 60) shown.push(s);

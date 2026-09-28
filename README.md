@@ -4,6 +4,14 @@ A skill for Claude Code and Codex that interviews you about your app, reads your
 
 Made with Claude Opus 5.5.
 
+**Easiest way, no install:** open ChatGPT or Claude and send one message:
+
+> Read the skill at https://github.com/japsnap/motionreels and follow it to make a promo video of https://your-site.example . Give me the MP4 at the end.
+
+(日本語: 「https://github.com/japsnap/motionreels のスキルを読んで、その手順どおりに https://あなたのサイト のプロモ動画を作って。最後はMP4でください。」)
+
+**For AI assistants given this link:** fetch these three files and follow `SKILL.md` exactly (its "In a chat app" section applies): https://raw.githubusercontent.com/japsnap/motionreels/main/motionreels/SKILL.md , https://raw.githubusercontent.com/japsnap/motionreels/main/motionreels/references/craft.md , https://raw.githubusercontent.com/japsnap/motionreels/main/motionreels/template/index.html . Start by asking the user SKILL.md's questions.
+
 **日本語の説明は下にあります。**
 
 ## Why it looks sharp instead of generic
@@ -48,7 +56,7 @@ Made with Claude Opus 5.5.
 3. In a new chat, ask for a promo video of your app and answer the questions. Ask for the MP4; if it can't make one, you get an `index.html` file.
 4. Download it, open it in desktop Chrome or Edge, press **Record video**, choose "this tab" and allow it. The video plays once and an MP4 downloads (WebM where the browser cannot record MP4). Use a full-screen window: the quality is the size it shows on your screen.
 
-**ChatGPT** (no install; tested on the Plus plan: usable, weaker than Opus 5.5, and it also made an MP4 when asked)
+**ChatGPT** (no install; tested on the Plus plan with its default model, GPT-5.6 Sol per OpenAI's release notes, at medium thinking effort: usable but weaker than Claude Opus 5.5 (the same checker found 45 problems in its page against 1 in Opus 5.5's), and it made an MP4 when asked)
 
 1. Download this repo as a ZIP and unzip it.
 2. In ChatGPT start a new chat and attach three files: `motionreels/SKILL.md`, `motionreels/references/craft.md`, `motionreels/template/index.html`.
