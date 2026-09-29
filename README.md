@@ -56,7 +56,7 @@ Made with Claude Opus 5.5.
 3. In a new chat, ask for a promo video of your app and answer the questions. Ask for the MP4; if it can't make one, you get an `index.html` file.
 4. Download it, open it in desktop Chrome or Edge, press **Record video**, choose "this tab" and allow it. The video plays once and an MP4 downloads (WebM where the browser cannot record MP4). Use a full-screen window: the quality is the size it shows on your screen.
 
-**ChatGPT** (no install; tested on the Plus plan with its default model, GPT-5.6 Sol per OpenAI's release notes, at medium thinking effort: usable but weaker than Claude Opus 5.5 (the same checker found 45 problems in its page against 1 in Opus 5.5's), and it made an MP4 when asked)
+**ChatGPT** (no install; tested on the Plus plan: GPT-6 Astra at medium effort works but is clearly behind Claude Opus 5.5; GPT-5.6 Sol was poor (the same checker found 45 problems in its page against 1 in Opus 5.5's). Both made an MP4 when asked)
 
 1. Download this repo as a ZIP and unzip it.
 2. In ChatGPT start a new chat and attach three files: `motionreels/SKILL.md`, `motionreels/references/craft.md`, `motionreels/template/index.html`.
