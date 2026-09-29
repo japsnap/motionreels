@@ -1,6 +1,6 @@
 ---
 name: motionreels
-description: Make a short, sharp motion-design video of an app or website from its real screens, colours and words, and deliver an MP4. Asks the user a few questions first, in their language. Use when someone asks for a promo video, product video, feature video, launch reel or app walkthrough video.
+description: Make a short, sharp promo video of any business, app or website from its own site (colours, fonts, words, screens) and deliver an MP4, for example a demo video to send a prospect or a promo for your own product. Asks the user a few questions first, in their language. Use when someone asks for a promo video, demo video, product video, feature video, launch reel or app walkthrough video.
 ---
 
 # motionreels

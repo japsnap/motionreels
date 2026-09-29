@@ -1,6 +1,8 @@
 # motionreels
 
-A skill for Claude Code and Codex that interviews you about your app, reads your site, and makes a short motion-design video of your real product: a one-feature intro, a brand promo, a walkthrough or a launch cut. It talks to you in your language (Japanese and English fully supported) and renders an MP4.
+A demo creator: give it a business's website and it makes a short, dynamic promo video of that business from the site's own colours, fonts, words and screens, and renders an MP4. It asks you a few questions first, in your language (Japanese and English fully supported).
+
+**What it is for:** a ready video of someone's own product is a strong opener. Make one from a prospect's website and send it as a demo, the video version of building a site for a business and pitching it to them; use it to start a conversation, a proposal or a deal. Promoting your own app or site works the same way.
 
 Made with Claude Opus 5.5.
 
@@ -102,7 +104,7 @@ Dependencies: [Puppeteer](https://pptr.dev) (drives headless Chrome), [ffmpeg-st
 
 ## 日本語
 
-motionreels は、Claude Code と Codex で使える動画づくりのスキルです。アプリについていくつか質問し、サイトから実際の色・フォント・文言を読み取り、実際の画面をもとに短いモーショングラフィックス動画（機能紹介、ブランド紹介、使い方、ローンチ告知）を MP4 で書き出します。
+motionreels は、相手のウェブサイトから、そのサービスの紹介動画を作るデモ作成スキルです。見込み客のサイトから動画を作って送れば、営業や商談のきっかけになります（ウェブサイトを作って営業をかける手法の動画版）。自分のアプリの宣伝にも使えます。Claude Code と Codex で使える動画づくりのスキルです。アプリについていくつか質問し、サイトから実際の色・フォント・文言を読み取り、実際の画面をもとに短いモーショングラフィックス動画（機能紹介、ブランド紹介、使い方、ローンチ告知）を MP4 で書き出します。
 
 - **会話はあなたの言語で。** 日本語で話しかければ、質問も確認もすべて日本語で、動画の文字も日本語になります。ほかの言語版がほしいときは頼めば同時に書き出せます。
 - **音つき。** 音楽と効果音はコードで生成します。他人の音源は使わないので第三者の許諾は不要です。ただし公開先の音楽ルール（自動判定を含む）と、公開する内容の責任はご自身にあります。自分の音楽を使うときは、使う権利があるかを確認してから入れます。
