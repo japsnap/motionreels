@@ -38,6 +38,8 @@ function probe(mp4) {
 // Music repertoire: every rendered track is logged; a different video may not reuse a track,
 // and reusing the style of either of the last two videos is warned about.
 function logTrack(plan, video) {
+  // The built-in example is a test render, not a user's video: never let it count against their history.
+  if (video === 'template') return;
   const file = path.join(os.homedir(), '.motionreels', 'used.json');
   let used = [];
   try { used = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { used = []; }
