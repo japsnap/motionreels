@@ -3,6 +3,7 @@
 // Output: <video-folder>/out/<folder-name>-<lang>-<W>x<H>.mp4, then verified by reading it back.
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
 import ffmpegPath from 'ffmpeg-static';
 import { parseArgs, resolvePage, openPage, seek, shot, fail } from './lib.mjs';
@@ -34,6 +35,21 @@ function probe(mp4) {
   };
 }
 
+// Music repertoire: every rendered track is logged; a different video may not reuse a track,
+// and reusing the style of either of the last two videos is warned about.
+function logTrack(plan, video) {
+  const file = path.join(os.homedir(), '.motionreels', 'used.json');
+  let used = [];
+  try { used = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { used = []; }
+  const clash = used.find((u) => u.signature === plan.signature && u.video !== video);
+  if (clash) fail(`This music track was already used by "${clash.video}" on ${clash.date}. Pick another style, or set sound.seed to a new number.`);
+  const recent = used.filter((u) => u.video !== video).slice(-2);
+  if (recent.some((u) => u.style === plan.style)) console.log(`  WARN  music style "${plan.style}" was also used by ${recent.filter((u) => u.style === plan.style).map((u) => u.video).join(', ')}; the track differs, but a different style would sound fresher`);
+  used = used.filter((u) => u.video !== video);
+  used.push({ video, date: new Date().toISOString().slice(0, 10), style: plan.style, key: plan.key, bpm: plan.bpm, seed: plan.seed, signature: plan.signature });
+  try { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, JSON.stringify(used, null, 1)); } catch (e) { console.log(`  WARN  could not write ${file}: ${e.message}`); }
+}
+
 async function renderOne(lang) {
   if (!args['no-check']) {
     const res = await check(file, { lang });
@@ -51,7 +67,8 @@ async function renderOne(lang) {
   if (wantSound) {
     wav = path.join(outDir, `${name}-sound.wav`);
     const a = buildAudio(meta, wav, { musicOff: !!args.audio });
-    console.log(`sound: ${a.cues} effects, music ${a.music}${args.audio ? ` (${path.basename(args.audio)})` : ''}`);
+    console.log(`sound: ${a.cues} effects, music ${a.music}${a.plan ? ` (key ${a.plan.key}, chords ${a.plan.prog.join('-')}, ${a.plan.bpm} BPM, seed ${a.plan.seed})` : ''}${args.audio ? ` (${path.basename(args.audio)})` : ''}`);
+    if (a.plan) logTrack(a.plan, name);
   }
   const ff = ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(meta.fps), '-c:v', 'png', '-i', '-'];
   if (wav) ff.push('-i', wav);

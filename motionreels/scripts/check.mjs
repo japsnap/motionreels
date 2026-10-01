@@ -9,11 +9,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { parseArgs, resolvePage, openPage, seek, shot } from './lib.mjs';
-import { CUE_NAMES, MUSIC } from './audio.mjs';
+import { CUE_NAMES, MUSIC, PACHINKO } from './audio.mjs';
 
 const SAMPLE_STEP = 0.1;      // seconds between sampled frames
 const STILL_DIFF = 0.25;      // mean pixel change (0-255) below which two samples count as still
-const MAX_HOLD = { calm: 1.6, medium: 1.2, high: 0.8 }; // longest still stretch mid-video, by intensity
+const MAX_HOLD = { calm: 1.6, low: 1.6, medium: 1.2, high: 0.8 }; // longest still stretch mid-video, by intensity (the dopamine level; low = calm)
 const START_WINDOW = 0.3;     // something must visibly move within this many seconds of frame 0
 const MIN_TEXT_RATIO = 0.04;  // smallest readable text as a share of the frame width
 // Seconds a line must be on screen to be read: 0.5 s plus 0.22 s a word (Latin) or 0.12 s a character (CJK).
@@ -82,7 +82,7 @@ export async function check(target, { lang, quiet = false } = {}) {
 
   const { browser, page, meta } = await openPage(file, { lang, scale: 0.25 });
   try {
-    if (!MAX_HOLD[meta.intensity]) warns.push(`intensity "${meta.intensity}" unknown; use calm, medium or high (checked as medium)`);
+    if (!MAX_HOLD[meta.intensity]) warns.push(`intensity "${meta.intensity}" unknown; use low (calm), medium or high (checked as medium)`);
     const holdLimit = MAX_HOLD[meta.intensity] || MAX_HOLD.medium;
     // Sound: every cue name and the music style must exist (a misspelt name must fail here, not go silent).
     const music = (meta.sound || {}).music || 'none';
@@ -91,6 +91,10 @@ export async function check(target, { lang, quiet = false } = {}) {
       if (!CUE_NAMES.includes(c.name)) fails.push(`sound cue "${c.name}" at ${c.t}s does not exist; use one of ${CUE_NAMES.join(', ')}`);
       if (!(c.t >= 0 && c.t < meta.duration)) fails.push(`sound cue "${c.name}" at ${c.t}s is outside the video (0 to ${meta.duration}s)`);
     }
+    // Dopamine level high: the payoffs use the pachinko family (reach before the reveal, jackpot or fever on it, pachinko or payout on cascades).
+    const pach = (meta.cues || []).filter((c) => PACHINKO.includes(c.name));
+    if (meta.intensity === 'high' && pach.length < 2) fails.push(`dopamine level high needs pachinko sounds on its payoffs (at least 2 of ${PACHINKO.join(', ')}); found ${pach.length}`);
+    if (meta.intensity !== 'high' && pach.length) warns.push(`pachinko sounds (${[...new Set(pach.map((c) => c.name))].join(', ')}) belong to dopamine level high; this video is ${meta.intensity}`);
     if (meta.duration > 45) warns.push(`duration ${meta.duration}s: over 45 seconds usually loses the viewer; one idea per video`);
 
     // Text audit: every visible word belongs to data-say (message) or data-ui (a recreated screen).
@@ -194,7 +198,8 @@ export async function check(target, { lang, quiet = false } = {}) {
   return { ok: fails.length === 0, fails, warns };
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const realOf = (p) => { try { return fs.realpathSync.native(p); } catch { return path.resolve(p); } };
+if (process.argv[1] && realOf(process.argv[1]) === realOf(fileURLToPath(import.meta.url))) {
   const args = parseArgs(process.argv.slice(2));
   const res = await check(args._[0], { lang: args.lang, quiet: !!args.json });
   if (args.json) console.log(JSON.stringify(res, null, 2));

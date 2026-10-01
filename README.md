@@ -71,6 +71,8 @@ For the full-quality file with sound, run the same skill in Claude Code.
 
 By default the MP4 gets a music bed and sound effects that motionreels **generates from code** (`motionreels/scripts/audio.mjs`): no recording made by anyone else is used, so there is nothing to license from a third party. japsnap claims no rights in the generated audio; to the extent any exist, they are granted under the same MIT terms, no credit needed. The preview page and its Record button are silent.
 
+There are eight base music styles (bright, calm, pulse, groove, lofi, cinematic, playful, bold), produced like a record: filtered synths, supersaw pads, FM keys and bells, reverb and echo, sidechain pumping, a master compressor. Every video crafts its own version: tempo, key, brightness, groove, chords, drum pattern and melody come from the video's name, the music rises and falls with the picture, a short sonic logo can land with the logo, and a log in `~/.motionreels/used.json` stops a track from being reused for another video. About thirty-five sound effects, including a pachinko set (ball rattle, payout, reach siren, jackpot, fever) used when the dopamine level is high.
+
 If you add your own music (`render.mjs --audio music.mp3`), the skill first asks you to confirm you have the right to use that track in a public video. The skill is told never to download music, sound effects or meme clips. If you use a music library, check that track's own licence for your platform yourself.
 
 No warranty: the software and its output come as is (see LICENSE). Nobody can promise a video will pass a platform's automated matching (YouTube Content ID, Instagram, TikTok) or draw no claim; what you publish, and any dispute about it, is yours.

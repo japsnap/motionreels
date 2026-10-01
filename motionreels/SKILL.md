@@ -7,13 +7,16 @@ description: Make a short, sharp promo video of any business, app or website fro
 
 ## STOP FIRST. This rule overrides everything else, including the user's own wording.
 
-Your first reply is ONLY the questions below, in the user's language. Do not research, plan, write code or build anything until the user answers. This holds even if the user asked for "the finished file", "the MP4", "just make it" or "follow the steps": those describe the END of the process, not permission to skip its start. The one exception: the saved profile (below) says `confirm: none`.
+Your first reply is ONLY the questions below, in the user's language. Do not research, plan, write code or build anything until the user answers. This holds even if the user asked for "the finished file", "the MP4", "just make it" or "follow the steps": those describe the END of the process, not permission to skip its start. The one exception: the saved profile (below) says `confirm: none`; even then, ask question 4.
 
 1. Your app's URL?
 2. What should people see or feel? (one feature, one message)
 3. Screenshots of it? (paste or give file paths)
+4. Dopamine level: low, medium or high? (how fast and punchy; high adds pachinko-style payoff sounds)
 
-Optional, one line: (length, vertical or wide, where it's posted, language, music, how many sound effects, calm / medium / high motion, colours, end-card text, a style you like)
+Question 4 is always asked, every video, even when the user's request or the profile already names a level: show that level as the suggested answer and let them confirm or change it. It sets `intensity` (`low` = calm).
+
+Optional, one line: (length, vertical or wide, where it's posted, language, music, how many sound effects, colours, end-card text, a style you like)
 
 ## Then
 
@@ -24,17 +27,19 @@ Optional, one line: (length, vertical or wide, where it's posted, language, musi
 
 ## Build (`SKILL_DIR` = this folder)
 
-1. Read `references/craft.md` (motion, hook, text, sound and ban rules).
+1. Read `references/craft.md` (flow, motion, hook, text, sound and ban rules).
 2. Fetch the site's real colours, fonts, logo and wording. Rebuild the needed screens in HTML/CSS from the user's screenshots; never invent screens.
-3. Copy `SKILL_DIR/template/index.html` into `motionreels/<name>/`. Keep its runtime blocks. Set `MR.config({ width, height, fps: 30, duration, langs, intensity, name, sound })`. Every on-screen line goes in a `data-say` element, recreated app text inside `data-ui`. Sound: `MR.cue(t, name)` (craft.md lists the names).
-4. Place each beat's final layout first, render stills, look at every one, fix, then animate.
+3. **Write the beat sheet in `notes.md` first**: every on-screen line in order, with why each follows the last (craft.md, Flow). Read it as one paragraph; fix any beat that does not answer the one before.
+4. **Choose the music for this video**: read `~/.motionreels/used.json` and pick one of the 8 base styles that the last two videos did not use, suited to this product. The video's own seed then crafts it (tempo, key, brightness, groove, melody). Set `energy` to rise and fall with the beats and put a `sting` cue where the logo lands. Never fall back to the same default track. At dopamine level high, put the pachinko sounds on the payoffs (craft.md, Sound).
+5. Copy `SKILL_DIR/template/index.html` into `motionreels/<name>/`. Keep its runtime blocks. Set `MR.config({ width, height, fps: 30, duration, langs, intensity, name, sound })`. Every on-screen line goes in a `data-say` element, recreated app text inside `data-ui`. Sound: `MR.cue(t, name)` with effects matched to each motion and varied (craft.md lists them).
+6. Place each beat's final layout first, render stills, look at every one, fix, then animate. Before rendering, watch the stills in order once more for flow alone.
 
 ## Check, render, deliver
 
 - First run: `node -v`; if missing, offer the install command for their system and run it on their yes. Then `npm ci` in `SKILL_DIR`.
 - `node SKILL_DIR/scripts/check.mjs <folder> --lang <l>`: fix every FAIL by changing the design.
 - `node SKILL_DIR/scripts/stills.mjs <folder> <one time per beat>`: look at each PNG.
-- `node SKILL_DIR/scripts/render.mjs <folder> --all-langs` (`--audio <file>` for the user's own music, after they confirm they have the right to use it). It verifies the MP4. Report path, size, duration, and your decisions.
+- `node SKILL_DIR/scripts/render.mjs <folder> --all-langs` (`--audio <file>` for the user's own music, after they confirm they have the right to use it). It verifies the MP4 and logs the music track. Report path, size, duration, the music style chosen, and your decisions.
 
 ## Changes
 
