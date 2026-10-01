@@ -26,7 +26,7 @@ Made with Claude Opus 5.5.
 ## How a session goes
 
 1. You say "make a promo video for my app" (or 「アプリの紹介動画を作って」).
-2. In its first reply it asks three short things (your URL, what people should see or feel, screenshots) plus an optional list you can add to (length, format, sound, intensity, colours...). Skip any; it decides the rest from your site and screens.
+2. In its first reply it asks four short things (your URL, what people should see or feel, screenshots, and the dopamine level: low, medium or high) plus an optional list you can add to (length, format, sound, colours...). The dopamine level is always asked; skip anything else and it decides from your site and screens.
 3. It reads your site and screenshots and plans the video, checking a still of every scene itself.
 4. It animates, runs the checker, and hands you the finished MP4, with a list of what it decided.
 5. Want changes? Say them in plain words. It keeps every version, logs your notes, and edits the video you already have rather than starting over.
@@ -113,7 +113,7 @@ motionreels は、相手のウェブサイトから、そのサービスの紹�
 - **あなたを覚えます（許可制）。** 「確認なしで作って」「効果音多めで」などを、許可をもらったときだけ、あなたのパソコンの `~/.motionreels/profile.json` に保存し、次回から反映します。
 - **保証はありません。** ソフトと出力は現状のまま提供されます（LICENSE 参照）。動画が各プラットフォームの自動判定を通ることや、申し立てを受けないことは誰にも約束できません。公開する内容と、それに関する争いの責任はご自身にあります。
 - **質問は一度にまとめて。** 答えたくない質問は飛ばして大丈夫です。飛ばした項目は決まった初期値で埋めるのではなく、サイト・画面・ほかの回答から毎回考えて決め、何をなぜ決めたかを伝えます。
-- **動きの強さを選べます。** 落ち着いた（calm）、中くらい（medium）、強め（high）の3段階です。
+- **ドーパミン量を毎回聞きます。** 低め（low）、中くらい（medium）、高め（high）の3段階で、動きの速さと音の強さが変わります。高めにすると、パチンコ風の効果音（リーチ、大当たり、玉の流れる音など）が見せ場に入ります。
 - **最初に見た目を合わせます。** 動かす前に、流れの表と各場面の静止画を見せて確認します。直しは作ったものの上に重ね、毎回の版を残すので「前のに戻して」もできます。
 - **Node.js がなくても使えます。** Claude Code なら、必要なときに Node.js のインストールをこちらの許可つきで提案します。claude.ai や ChatGPT で作った場合は、できた index.html を Chrome で開き「Record video」を押すと、画面の大きさの画質で MP4 が保存されます。
 - **偽物の映像は作りません。** 動画生成モデルは使わず、あなたのアプリの実際の画面と色から、コードでアニメーションを組みます。
