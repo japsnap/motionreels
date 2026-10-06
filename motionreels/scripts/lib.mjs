@@ -69,6 +69,10 @@ export async function openPage(file, { lang, scale = 1 } = {}) {
   return { browser, page, meta, errors };
 }
 
+// The user's own music (input `music`) under the generated effects (input `fx`), as an ffmpeg filter.
+// render.mjs mixes with it and check.mjs measures the loudness of the same mix.
+export const userMix = (meta, fx, music) => `[${music}:a]volume=0.5,afade=t=out:st=${Math.max(0, meta.duration - 1.2)}:d=1.2[m];[${fx}:a][m]amix=inputs=2:normalize=0`;
+
 export async function seek(page, t) {
   await page.evaluate((tt) => window.MR.seek(tt), t);
 }

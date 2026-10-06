@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawn, spawnSync } from 'node:child_process';
 import ffmpegPath from 'ffmpeg-static';
-import { parseArgs, resolvePage, openPage, seek, shot, fail } from './lib.mjs';
+import { parseArgs, resolvePage, openPage, seek, shot, fail, userMix } from './lib.mjs';
 import { check } from './check.mjs';
 import { buildAudio } from './audio.mjs';
 
@@ -54,7 +54,7 @@ function logTrack(plan, video) {
 
 async function renderOne(lang) {
   if (!args['no-check']) {
-    const res = await check(file, { lang });
+    const res = await check(file, { lang, audio: args.audio });
     if (!res.ok) fail('Check failed, nothing rendered. Fix the problems above (or read references/craft.md).');
   }
   let { browser, page, meta } = await openPage(file, { lang });
@@ -76,7 +76,7 @@ async function renderOne(lang) {
   if (wav) ff.push('-i', wav);
   if (args.audio) ff.push('-i', path.resolve(args.audio));
   ff.push('-c:v', 'libx264', '-preset', 'medium', '-crf', String(args.crf || 18), '-pix_fmt', 'yuv420p', '-r', String(meta.fps), '-movflags', '+faststart');
-  if (wav && args.audio) ff.push('-filter_complex', `[2:a]volume=0.5,afade=t=out:st=${Math.max(0, meta.duration - 1.2)}:d=1.2[m];[1:a][m]amix=inputs=2:normalize=0[a]`, '-map', '0:v', '-map', '[a]');
+  if (wav && args.audio) ff.push('-filter_complex', `${userMix(meta, 1, 2)}[a]`, '-map', '0:v', '-map', '[a]');
   else if (wav) ff.push('-map', '0:v', '-map', '1:a');
   if (wav) ff.push('-c:a', 'aac', '-b:a', '192k', '-shortest');
   ff.push(out);

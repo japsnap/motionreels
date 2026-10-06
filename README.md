@@ -20,7 +20,7 @@ Made with Claude Opus 5.5.
 
 - **Your real product.** The skill reads your site's actual colours, fonts and wording, and rebuilds your real screens from your screenshots. It is told never to generate fake footage or invent UI your app does not have; the script cannot check that, so look at the stills.
 - **Code, not a video model.** The video is one HTML page animated by time and recorded frame by frame, so every frame is exact and every note ("make the chart slower") is a one-line fix.
-- **Slop is blocked by a script.** `scripts/check.mjs` refuses to render when it finds blur-ins, 3D flips, particles, glow, a still opening, a picture held still longer than the chosen intensity allows, a line shown too briefly to read, lines over 8 words (16 characters in Japanese), text too small for a phone, or text under Instagram's buttons. The rules it cannot check by machine (crossfades, generic icons, invented UI) are written in `motionreels/references/craft.md` for the agent to follow.
+- **Slop is blocked by a script.** `scripts/check.mjs` refuses to render when it finds blur-ins, 3D flips, particles, glow, a still opening, a picture held still longer than the chosen intensity allows, a line shown too briefly to read, lines over 8 words (16 characters in Japanese), text too small for a phone, text under Instagram's buttons, letters cut off by a mask or text overlapping other text once a scene settles, a pile-up of sound effects louder than the rest of the track, or styles written where the browser ignores them. The rules it cannot check by machine (crossfades, generic icons, invented UI) are written in `motionreels/references/craft.md` for the agent to follow.
 - **Built for the first three seconds.** Short-video platforms rank on how many people swipe away in the first 3 seconds, so frame 0 must already be moving and show something specific.
 
 ## How a session goes
@@ -99,8 +99,9 @@ node ~/.claude/skills/motionreels/scripts/render.mjs motionreels/my-video --all-
 
 - `motionreels/SKILL.md`: the instructions the agent follows.
 - `motionreels/references/craft.md`: motion, type and structure rules, and the ban list.
+- `motionreels/references/icon-design.md`: how to draw icons that teach, with the research behind it.
 - `motionreels/template/index.html`: the starting page with the time-driven runtime and a small example.
-- `motionreels/scripts/`: `check.mjs`, `stills.mjs`, `render.mjs`, `lib.mjs` shared by them, and `test-record.mjs` (a maintainer test of the Record button).
+- `motionreels/scripts/`: `check.mjs`, `stills.mjs`, `render.mjs`, `lib.mjs` shared by them, and two maintainer tests: `test-record.mjs` (the Record button) and `test-check.mjs` (the checker, on small pages that break each rule).
 
 Dependencies: [Puppeteer](https://pptr.dev) (drives headless Chrome), [ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) (GPL-3.0: both the npm package and the FFmpeg binary it downloads at install. MIT covers only this repo's own files; anyone redistributing an installed copy takes on the GPL terms), [pngjs](https://github.com/pngjs/pngjs).
 

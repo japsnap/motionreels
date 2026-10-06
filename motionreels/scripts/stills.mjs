@@ -9,7 +9,8 @@ const args = parseArgs(process.argv.slice(2));
 const file = resolvePage(args._[0]);
 const outDir = path.join(path.dirname(file), 'stills');
 fs.mkdirSync(outDir, { recursive: true });
-const { browser, page, meta } = await openPage(file, { lang: args.lang, scale: args.scale ? +args.scale : 0.5 });
+// Full size by default: a smaller frame hides clipped descenders and small overlaps.
+const { browser, page, meta } = await openPage(file, { lang: args.lang, scale: args.scale ? +args.scale : 1 });
 let times = args._.slice(1).map(Number).filter((n) => !Number.isNaN(n));
 if (!times.length) times = Array.from({ length: Math.floor(meta.duration) + 1 }, (_, i) => i);
 for (const t of times) {
